@@ -1,5 +1,5 @@
 import { getProfile } from './api.js';
-import { esc, int, usd, date, paragraphs } from './format.js';
+import { esc, int, usd, date, paragraphs, avatar } from './format.js';
 
 function webURL(value) {
   if (!value || typeof value !== 'string') return '';
@@ -28,6 +28,6 @@ export async function profile(root, handle) {
   const record = p.record ?? {};
   const stats = [['Entered', record.competitions_entered], ['Placed', record.competitions_placed], ['Won', record.competitions_won], ['Podiums', record.podium_finishes], ['Best placement', record.best_placement], ['Total prize', record.prize_usd]];
   const explorer = webURL(p.wallet?.explorer_url);
-  root.innerHTML = `<article class="profile"><a href="#/">← All bounties</a><p class="eyebrow" style="margin-top:28px">Builder fieldnotes</p><div class="profile-heading">${image ? `<img class="avatar portrait" src="${esc(image)}" crossorigin="anonymous" alt="" width="80" height="80">` : ''}<div><h1>${esc(p.display_name || p.handle || handle)}</h1><p class="muted">@${esc(p.handle || handle)}</p></div></div>${p.bio ? `<div class="prose">${paragraphs(p.bio)}</div>` : ''}${p.joined_at ? `<p class="muted">Joined ${esc(date(p.joined_at))}</p>` : ''}<h2>Track record</h2><table><tbody>${stats.map(([label, value]) => `<tr><th scope="row">${label}</th><td>${value == null || !Number.isFinite(Number(value)) ? '—' : label === 'Total prize' ? usd(value) : int(value)}</td></tr>`).join('')}</tbody></table>${recent('Recent solutions', p.solutions)}${recent('Recent payouts', p.payouts)}${p.wallet?.address ? `<h2>Wallet</h2><p class="wallet">${explorer ? `<a href="${esc(explorer)}" target="_blank" rel="noopener noreferrer">${esc(p.wallet.address)} ↗</a>` : esc(p.wallet.address)}</p>` : ''}</article>`;
+  root.innerHTML = `<article class="profile"><a href="#/">← All bounties</a><p class="eyebrow" style="margin-top:28px">Builder fieldnotes</p><div class="profile-heading"><span class="portrait">${avatar(image,p.handle||handle)}</span><div><h1>${esc(p.display_name || p.handle || handle)}</h1><p class="muted">@${esc(p.handle || handle)}</p></div></div>${p.bio ? `<div class="prose">${paragraphs(p.bio)}</div>` : ''}${p.joined_at ? `<p class="muted">Joined ${esc(date(p.joined_at))}</p>` : ''}<h2>Track record</h2><div class="facts">${stats.filter(([,v])=>v!=null).map(([label, value]) => `<div class="card"><small>${label}</small><b>${value == null || !Number.isFinite(Number(value)) ? '—' : label === 'Total prize' ? usd(value) : int(value)}</b></div>`).join('')}</div>${recent('Recent solutions', p.solutions)}${recent('Recent payouts', p.payouts)}${p.wallet?.address ? `<h2>Wallet</h2><p class="wallet">${explorer ? `<a href="${esc(explorer)}" target="_blank" rel="noopener noreferrer">${esc(p.wallet.address)} ↗</a>` : esc(p.wallet.address)}</p>` : ''}</article>`;
   window.__shotReady = true;
 }

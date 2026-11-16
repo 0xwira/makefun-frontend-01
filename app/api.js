@@ -3,13 +3,11 @@ const cache = new Map();
 async function get(path) {
   const url = base + path;
   const saved = cache.get(url);
-  const response = await fetch(url, {
-    headers: saved?.etag ? { 'If-None-Match': saved.etag } : {},
-  });
-  if (response.status === 304 && saved) return saved.data;
+  if (saved && Date.now() - saved.at < 60000) return saved.data;
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`Request failed (${response.status})`);
   const data = await response.json();
-  cache.set(url, { etag: response.headers.get('ETag'), data });
+  cache.set(url, { data, at: Date.now() });
   return data;
 }
 export const getBounties = () => get('/competitions?status=open&activity=times');

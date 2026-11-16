@@ -7,6 +7,7 @@ async function route() {
   window.__shotReady = false;
   app.innerHTML = '<p class="notice" role="status">Loading fieldnotes…</p>';
   search.disabled = location.hash.split('?')[0] !== '#/' && location.hash !== '';
+  document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active', location.hash.includes('leaderboard')?a.dataset.route==='leaderboard':location.hash.includes('profile')?a.dataset.route==='profile':a.dataset.route==='board'));
   const stage = document.createElement('div');
   try {
     const path = (location.hash.slice(1) || '/').split('?')[0];
