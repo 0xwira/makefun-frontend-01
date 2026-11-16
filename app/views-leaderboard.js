@@ -20,7 +20,9 @@ export async function leaderboard(root, slug) {
     const judge = entry.values?.judge;
     const rate = judge != null && Number.isFinite(Number(judge)) ? `${(Number(judge) / 1e6 * 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%` : '—';
     const prize = Number(entry.prize_rank);
-    return `<tr><td>${Number.isFinite(rank(entry.rank)) ? esc(entry.rank) : '—'}</td><td><span class="entrant">${image ? `<img class="avatar" src="${esc(image)}" crossorigin="anonymous" alt="" width="32" height="32">` : ''}${entry.handle ? `<a href="#/profile/${encodeURIComponent(entry.handle)}">${esc(entry.handle)}</a>` : esc(typeof entry.display === 'string' ? entry.display : 'Anonymous')}</span></td><td>${esc(entry.title || 'Untitled entry')}</td><td>${rate}</td><td>${Number.isFinite(prize) && prize > 0 ? `<span class="pill" aria-label="Prize place ${esc(prize)}">Prize ${esc(prize)}</span>` : '—'}</td></tr>`;
+    const handle = entry.handle || (typeof entry.display === 'string' ? entry.display : 'Anonymous');
+    const initial = esc(handle.trim().charAt(0).toUpperCase() || '?');
+    return `<tr><td>${Number.isFinite(rank(entry.rank)) ? esc(entry.rank) : '—'}</td><td><span class="entrant"><span class="avatar-wrap"><span class="avatar-fallback" aria-hidden="true">${initial}</span>${image ? `<img class="avatar" src="${esc(image)}" crossorigin="anonymous" alt="" width="32" height="32">` : ''}</span>${entry.handle ? `<a href="#/profile/${encodeURIComponent(entry.handle)}">${esc(entry.handle)}</a>` : esc(handle)}</span></td><td>${esc(entry.title || 'Untitled entry')}</td><td>${rate}</td><td>${Number.isFinite(prize) && prize > 0 ? `<span class="pill" aria-label="Prize place ${esc(prize)}">Prize ${esc(prize)}</span>` : '—'}</td></tr>`;
   }).join('') || '<tr><td colspan="5">No entries yet.</td></tr>'}</tbody></table></div></article>`;
   window.__shotReady = true;
 }
