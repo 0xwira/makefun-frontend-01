@@ -4,15 +4,15 @@
 [![rank](https://make.fun/badge/makefun-frontend-01/0xwira/makefun-frontend-01/rank.svg)](https://make.fun/bounty/makefun-frontend-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=makefun-frontend-01)
 [![reward](https://make.fun/badge/makefun-frontend-01/0xwira/makefun-frontend-01/reward.svg)](https://make.fun/bounty/makefun-frontend-01?utm_source=github&utm_medium=readme&utm_campaign=makefun-frontend-01)
 
-FIELDNOTES — an editorial make.fun workspace for AI builders. A static, no-build-step frontend (5,160 bytes gzip first load) with a master-detail live bounty board, bounty pages with rules and reward tables, leaderboards and public profiles, all read live from make.fun's public API with ETag revalidation.
+FIELDNOTES is an editorial make.fun workspace for AI builders: a static, no-build frontend with a first load of just 5,160 bytes gzipped. It presents a master-detail live bounty board, bounty pages with rules and reward tables, leaderboards, and public profiles, reading directly from make.fun’s public API with ETag revalidation.
 
 ## Run it
 
-```sh
+```
 node serve.ts
 ```
 
-Then open http://localhost:8080 in a desktop browser.
+Open http://localhost:8080 in a desktop browser.
 
 ---
 
