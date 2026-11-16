@@ -1,16 +1,8 @@
-const base = 'https://make.fun/api';
-const cache = new Map();
-async function get(path) {
-  const url = base + path;
-  const saved = cache.get(url);
-  if (saved && Date.now() - saved.at < 60000) return saved.data;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Request failed (${response.status})`);
-  const data = await response.json();
-  cache.set(url, { data, at: Date.now() });
-  return data;
-}
-export const getBounties = () => get('/competitions?status=open&activity=times');
-export const getBounty = slug => get(`/competitions/${encodeURIComponent(slug)}`);
-export const getLeaderboard = slug => get(`/competitions/${encodeURIComponent(slug)}/leaderboard`);
-export const getProfile = handle => get(`/profiles/${encodeURIComponent(handle)}`);
+const cache=new Map();
+export async function get(path){const key=path.startsWith('https://make.fun/')?path:'https://make.fun'+path,old=cache.get(key);if(old&&Date.now()-old.time<60000)return old.data;const res=await fetch(key,{headers:{Accept:'application/json'}});if(!res.ok)throw Error(`Live data unavailable (${res.status})`);const data=await res.json();cache.set(key,{time:Date.now(),data});return data}
+export function items(x){if(Array.isArray(x))return x;for(const k of ['competitions','entries','leaderboard','submissions','items','results','data'])if(x?.[k]){const a=items(x[k]);if(a.length)return a}return []}
+export const competitions=()=>get('/api/competitions?status=open&activity=times').then(items);
+export function normalize(b){return {...b,slug:b.slug,title:b.title||b.name,summary:b.summary||'',description:b.description||b.summary||'',category:typeof b.category==='object'?b.category.name:b.category||'Other',pot:b.potDollars??b.pot_dollars??b.livePot??b.live_pot??b.pot??b.rewardAmount??b.reward_amount??b.reward,fee:b.entryFee??b.entry_fee,deadline:b.deadline??b.endsAt??b.ends_at,count:b.submissionCount??b.submission_count??b.entryCount??b.entries_count,rewards:b.rewards??b.placeRewards??b.place_rewards??[]}}
+export async function detail(slug,list){const b=list.find(x=>x.slug===slug);if(!b)throw Error('This bounty is not in the live board.');const url=b.links?.self||b.detailUrl||b.detail_url;return url?normalize({...b,...await get(url)}):b}
+export async function standings(b){if(Array.isArray(b.leaderboard))return b.leaderboard;if(Array.isArray(b.entries))return b.entries;const url=b.links?.leaderboard||b.leaderboardUrl||b.leaderboard_url;if(url)return items(await get(url));return items(await get('/api/competitions/'+encodeURIComponent(b.slug)+'/leaderboard'))}
+export async function builder(handle,list){const entries=[];for(const b of list){for(const e of [...(Array.isArray(b.entries)?b.entries:[]),...(Array.isArray(b.leaderboard)?b.leaderboard:[])])if((e.handle||e.user?.handle||e.username)===handle)entries.push({...e,bounty:b})}if(!entries.length)throw Error('Profile data is unavailable: the live API did not provide a verified profile endpoint.');return entries}

@@ -1,28 +1,3 @@
-import { getLeaderboard } from './api.js';
-import { esc, int } from './format.js';
-
-function avatar(path) {
-  try {
-    const url = new URL(path, 'https://make.fun');
-    return /^https?:$/.test(url.protocol) ? url.href : '';
-  } catch { return ''; }
-}
-
-export async function leaderboard(root, slug) {
-  window.__shotReady = false;
-  root.innerHTML = '<p class="notice" role="status">Loading leaderboard…</p>';
-  const data = await getLeaderboard(slug);
-  const entries = Array.isArray(data.entries) ? [...data.entries] : [];
-  const rank = value => value != null && Number.isFinite(Number(value)) ? Number(value) : Infinity;
-  entries.sort((a, b) => rank(a.rank) - rank(b.rank));
-  root.innerHTML = `<article class="page"><a href="#/bounty/${encodeURIComponent(slug)}">← Back to bounty</a><p class="eyebrow" style="margin-top:28px">The standings / ${esc(data.competition?.status ?? 'Leaderboard')}</p><h1>${esc(data.competition?.title ?? data.title ?? slug)}</h1><p class="muted">${int(entries.length)} entries · Ranked by judge win rate</p><div class="table-scroll"><table class="standings"><thead><tr><th scope="col">Rank</th><th scope="col">Entrant</th><th scope="col">Entry</th><th scope="col">Judge win rate</th><th scope="col">Prize place</th></tr></thead><tbody>${entries.map(entry => {
-    const image = entry.image ? avatar(entry.image) : '';
-    const judge = entry.values?.judge;
-    const rate = judge != null && Number.isFinite(Number(judge)) ? `${(Number(judge) / 1e6 * 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%` : '—';
-    const prize = Number(entry.prize_rank);
-    const handle = entry.handle || (typeof entry.display === 'string' ? entry.display : 'Anonymous');
-    const initial = esc(handle.trim().charAt(0).toUpperCase() || '?');
-    return `<tr><td>${Number.isFinite(rank(entry.rank)) ? esc(entry.rank) : '—'}</td><td><span class="entrant"><span class="avatar-wrap"><span class="avatar-fallback" aria-hidden="true">${initial}</span>${image ? `<img class="avatar" src="${esc(image)}" crossorigin="anonymous" alt="" width="32" height="32" onerror="this.style.visibility='hidden'">` : ''}</span>${entry.handle ? `<a href="#/profile/${encodeURIComponent(entry.handle)}">${esc(entry.handle)}</a>` : esc(handle)}</span></td><td>${esc(entry.title || 'Untitled entry')}</td><td>${rate}<div class="progress"><i style="width:${judge == null ? 0 : Math.max(0,Math.min(100,Number(judge)/10000))}%"></i></div></td><td>${Number.isFinite(prize) && prize > 0 ? `<span class="pill" aria-label="Prize place ${esc(prize)}">Prize ${esc(prize)}</span>` : '—'}</td></tr>`;
-  }).join('') || '<tr><td colspan="5">No entries yet.</td></tr>'}</tbody></table></div></article>`;
-  window.__shotReady = true;
-}
+import {detail,standings} from './api.js';
+import {esc,number,route,handle} from './format.js';
+export async function leaderboard(root,slug,list){const b=await detail(slug,list);root.innerHTML=`<a class="back" href="${route(b)}">← Back to bounty</a><span class="eyebrow">The standings / ${esc(b.status)}</span><h1>${esc(b.title)}</h1><p class="subtitle" id="count">Loading standings…</p><div class="table-wrap panel"><table><thead><tr><th>Rank</th><th>Entrant</th><th>Entry</th><th>Judge win rate</th><th>Prize place</th></tr></thead><tbody></tbody></table></div>`;const rows=await standings(b);root.querySelector('#count').textContent=`${number(rows.length)} entries · Ranked by judge win rate`;root.querySelector('tbody').innerHTML=rows.map((e,i)=>{const h=handle(e),rate=e.judgeWinRate??e.judge_win_rate??e.judge?.winRate??e.judge?.win_rate??e.winRate??e.win_rate,percent=rate==null?null:Number(rate)<=1?Number(rate)*100:Number(rate),place=e.prizePlace??e.prize_place??e.reward?.place;return `<tr><td>${esc(e.rank??i+1)}</td><td><a class="entrant" href="#/profile/${encodeURIComponent(h)}"><span class="avatar">${esc(h[0]?.toUpperCase())}</span>${esc(h)}</a></td><td>${esc(e.title||e.summary||e.description||'—')}</td><td>${percent==null?'—':`${percent.toFixed(2)}%<span class="bar"><i style="width:${Math.max(0,Math.min(100,percent))}%"></i></span>`}</td><td>${place?`<span class="prize">Prize ${esc(place)}</span>`:'—'}</td></tr>`}).join('')||'<tr><td colspan="5">No entries yet.</td></tr>'}

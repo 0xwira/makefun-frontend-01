@@ -1,40 +1,8 @@
-import { board } from './views-board.js';
-const app = document.querySelector('#app');
-const search = document.querySelector('#search');
-let revision = 0;
-async function route() {
-  const current = ++revision;
-  window.__shotReady = false;
-  app.innerHTML = '<p class="notice" role="status">Loading fieldnotes…</p>';
-  search.disabled = location.hash.split('?')[0] !== '#/' && location.hash !== '';
-  document.querySelectorAll('[data-route]').forEach(a=>a.classList.toggle('active', location.hash.includes('leaderboard')?a.dataset.route==='leaderboard':location.hash.includes('profile')?a.dataset.route==='profile':a.dataset.route==='board'));
-  const stage = document.createElement('div');
-  try {
-    const path = (location.hash.slice(1) || '/').split('?')[0];
-    const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
-    if (!parts.length) await board(stage, search.value);
-    else if (parts[0] === 'bounty' && parts.length === 2) {
-      const { bounty } = await import('./views-bounty.js');
-      await bounty(stage, parts[1]);
-    } else if (parts[0] === 'bounty' && parts[2] === 'leaderboard' && parts.length === 3) {
-      const { leaderboard } = await import('./views-leaderboard.js');
-      await leaderboard(stage, parts[1]);
-    } else if (parts[0] === 'profile' && parts.length === 2) {
-      const { profile } = await import('./views-profile.js');
-      await profile(stage, parts[1]);
-    } else throw new Error('Page not found');
-    if (current !== revision) return;
-    app.replaceChildren(...stage.childNodes);
-    document.querySelector('#live').textContent = '● Live data / make.fun';
-  } catch (error) {
-    if (current !== revision) return;
-    app.innerHTML = '<div class="notice"><h1>Unable to load this view</h1><p></p><button>Retry</button> <a href="#/">Back to board</a></div>';
-    app.querySelector('p').textContent = error.message;
-    app.querySelector('button').onclick = route;
-    document.querySelector('#live').textContent = 'Connection interrupted';
-  }
-  if (current === revision) window.__shotReady = true;
-}
-search.addEventListener('input', route);
-window.addEventListener('hashchange', route);
-route();
+import {competitions,normalize} from './api.js';
+import {musang,money,open,esc,route,error} from './format.js';
+import {board} from './views-board.js';
+let list=[],token=0;const main=document.querySelector('main');
+document.querySelector('#sidebar').innerHTML=`<a class="brand" href="#/"><span class="logo">${musang}</span><span>FIELDNOTES<small>by make.fun</small></span></a><nav><a data-nav="board" href="#/">◈ Bounties</a><a data-nav="leaderboard" href="#/leaderboard">▤ Leaderboard</a><a data-nav="profile" href="#/profiles">◎ Profiles</a></nav><div class="sidebar-bottom"><div class="promo"><span>${musang}</span><strong>Build. Create. Win.</strong><small>with make.fun</small><a href="https://make.fun" target="_blank" rel="noreferrer" aria-label="Visit make.fun">→</a></div><small class="source">● Live data / make.fun</small></div>`;
+const loaded=competitions().then(x=>{list=x.map(normalize);const live=list.filter(open);document.querySelector('#totals').textContent=`${live.length} live bounties · ${money(live.reduce((a,b)=>a+Number(b.pot||0),0))} in live pots`;return list});
+async function render(){const current=++token;window.__shotReady=false;main.innerHTML='<p class="loading">Loading live data…</p>';try{await loaded;if(current!==token)return;const p=(location.hash.slice(1)||'/').split('/').filter(Boolean).map(decodeURIComponent);let kind=p[0]==='profile'||p[0]==='profiles'?'profile':p.includes('leaderboard')?'leaderboard':'board';document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('active',a.dataset.nav===kind));if(p[0]==='bounty'){if(p[2]==='leaderboard')await (await import('./views-leaderboard.js')).leaderboard(main,p[1],list);else await (await import('./views-bounty.js')).bounty(main,p[1],list)}else if(p[0]==='profile'){await (await import('./views-profile.js')).profile(main,p[1],list)}else if(p[0]==='profiles'){main.innerHTML='<span class="eyebrow">THE BUILDERS</span><h1>Builder profiles</h1><p>Enter a make.fun handle to explore their entries and results.</p><form id="profile-form"><input name="handle" required placeholder="Builder handle" aria-label="Builder handle"><button>View profile →</button></form>';document.querySelector('form').onsubmit=e=>{e.preventDefault();location.hash='/profile/'+encodeURIComponent(new FormData(e.target).get('handle'))}}else if(p[0]==='leaderboard'){main.innerHTML='<span class="eyebrow">THE STANDINGS</span><h1>Leaderboards</h1><div class="directory">'+list.map(b=>`<a class="panel" href="${route(b)}/leaderboard">${esc(b.title)} <span>View standings →</span></a>`).join('')+'</div>'}else await board(main,list,document.querySelector('#search').value)}catch(e){if(current===token)main.innerHTML=error(e)}finally{if(current===token)window.__shotReady=true}}
+window.addEventListener('hashchange',render);document.querySelector('#search').addEventListener('input',()=>{if(location.hash&&location.hash!=='#/')location.hash='/';else render()});render();

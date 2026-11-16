@@ -1,36 +1,22 @@
-export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-export const int = n => Number(n ?? 0).toLocaleString('en-US');
-export const usd = n => Number(n ?? 0).toLocaleString('en-US', {
-  style: 'currency', currency: 'USD', minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2,
-});
-export function date(iso) {
-  const value = new Date(iso);
-  return Number.isFinite(+value) ? value.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
-  }) + ' UTC' : 'Unscheduled';
-}
-export function timeLeft(iso) {
-  const minutes = Math.ceil((new Date(iso) - Date.now()) / 60000);
-  if (!(minutes > 0)) return 'Closed';
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor(minutes % 1440 / 60);
-  return `${days ? `${days}d ${hours}h` : `${hours}h ${minutes % 60}m`}`;
-}
-export const isOpen = b => new Date(b.deadline) > Date.now();
-export const status = b => `<span class="pill ${isOpen(b) ? 'open' : ''}">${isOpen(b) ? '● Live' : 'Closed'}</span>`;
-export const paragraphs = text => String(text ?? '').split(/\n\s*\n/).map(p => `<p>${esc(p)}</p>`).join('');
-export function facts(b) {
-  return `<dl><dt>Live pot</dt><dd>${usd(b.potUsd ?? b.rewardAmount)}</dd><dt>Entry fee</dt><dd>${b.entryFeeUsd == null || Number(b.entryFeeUsd) === 0 ? 'Free' : usd(b.entryFeeUsd)}</dd><dt>Deadline</dt><dd>${date(b.deadline)}</dd><dt>Time remaining</dt><dd>${isOpen(b) ? timeLeft(b.deadline) : 'Closed'}</dd><dt>Entries</dt><dd>${int(b.submissionCount)}</dd></dl>`;
-}
-export function rewards(b) {
-  const rows = Object.entries(b.rewards ?? {});
-  return `<h3>Rewards</h3>${rows.length ? `<table><thead><tr><th>Place</th><th>USD</th></tr></thead><tbody>${rows.map(([place, amount]) => `<tr><td>${esc(place)}</td><td>${usd(amount)}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Reward allocation not published.</p>'}`;
-}
+export const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const money=x=>x==null||!Number.isFinite(Number(x))?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(Number(x));
+export const number=x=>x==null?'—':new Intl.NumberFormat('en-US').format(x);
+export const open=b=>/^(open|live|active)$/i.test(b.status)&&(!b.deadline||new Date(b.deadline)>Date.now());
+export function left(b){if(!open(b))return 'Closed';if(!b.deadline)return '—';const m=Math.max(0,Math.floor((new Date(b.deadline)-Date.now())/60000));return `${Math.floor(m/60)}h ${m%60}m`}
+export const date=x=>x?new Date(x).toLocaleString('en-US',{timeZone:'UTC',dateStyle:'medium',timeStyle:'short'})+' UTC':'—';
+export const rewards=b=>Array.isArray(b.rewards)?b.rewards:Object.entries(b.rewards||{}).map(([place,amount])=>typeof amount==='object'?{place,...amount}:{place,amount});
+export const places=b=>b.topPrizes??b.top_prizes??rewards(b).length;
+export const prize=r=>typeof r==='number'?r:r.feeShareAmount??r.fee_share_amount??r.amountWithFees??r.amount_with_fees??r.totalAmount??r.total_amount??r.amount;
+export const pill=b=>`<span class="pill ${open(b)?'live':'closed'}">${open(b)?'● Live':'Closed'}</span>`;
+export const category=b=>`<span class="pill category">${esc(b.category)}</span>`;
+export const color=b=>['Growth','Code','Games','Forecasting','Trading'].includes(b.category)?b.category:'Other';
+const paths={people:'<circle cx="19" cy="13" r="5"/><path d="M9 35v-3q0-9 10-9t10 9v3m0-27q10 0 7 9m-3 7q9 0 9 10"/>',markdown:'<rect x="6" y="8" width="36" height="30" rx="4"/><path d="M12 31V16l7 9 7-9v15m8-15v16m-4-5 4 5 4-5"/>',crosshair:'<circle cx="24" cy="24" r="12"/><path d="M24 3v13m0 16v13M3 24h13m16 0h13"/>',gamepad:'<path d="M16 16h16q9 0 11 18 0 9-8 3l-6-5H19l-6 5q-8 6-8-3 2-18 11-18Z M15 20v10m-5-5h10m11-2h1m5 5h1"/>',sparkle:'<path d="m24 5 5 14 14 5-14 5-5 14-5-14L5 24l14-5Z m13 29 2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"/>',chart:'<path d="M7 6v35h35M12 32l10-11 8 5 12-16m-11 0h11v11"/>',layout:'<rect x="6" y="6" width="36" height="36" rx="4"/><path d="M6 17h36M16 17v25"/>',code:'<path d="m16 13-11 11 11 11m16-22 11 11-11 11M28 7l-8 34"/>',coins:'<ellipse cx="20" cy="13" rx="14" ry="6"/><path d="M6 13v15q14 12 28 0V13M6 21q14 12 28 0m1-3q12 1 8 10v10q-12 9-24 1"/>',megaphone:'<path d="M6 20v10h10l25 10V10L16 20Zm10 10 5 13h7l-5-10M16 20v10"/>'};
+export function icon(b){const t=(b.title||'').toLowerCase();const tests=[[/people|human|referral|signup|community/,'people'],[/markdown|render/,'markdown'],[/fps|shooter|tactical/,'crosshair'],[/game|play/,'gamepad'],[/\bai\b|judge|image|excited|art|picture|photo/,'sparkle'],[/forecast|predict|market|price/,'chart'],[/frontend|\bui\b|interface|design|website/,'layout'],[/code|dev|tool|api|bug/,'code'],[/trading|coin|token|swap/,'coins'],[/growth|viral|launch/,'megaphone']];const k=tests.find(([re])=>re.test(t))?.[1]||({Forecasting:'chart',Games:'gamepad',Code:'code',Growth:'megaphone',Trading:'coins'}[b.category])||'sparkle';return `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[k]}</svg>`}
+export const musang='<svg viewBox="0 0 40 40" aria-hidden="true"><path fill="white" d="m8 5 8 5h8l8-5-1 21-11 11L9 26Z"/><path fill="#3035ff" d="m9 15 11 3 11-3-2 9-9 6-9-6Z"/><path fill="white" d="m16 25 4 8 4-8Z"/></svg>';
+export const stat=(label,value)=>`<div class="stat"><small>${label}</small><strong>${value}</strong></div>`;
+export const route=b=>'#/bounty/'+encodeURIComponent(b.slug);
+export const handle=e=>e.handle||e.user?.handle||e.username||e.user?.username||'Unknown';
+export const error=e=>`<div class="notice"><h2>Live data unavailable</h2><p>${esc(e.message)}</p><button onclick="location.reload()">Try again</button></div>`;
 
-export const gradient = b => ({Code:'#2438FF,#00B4FF',Games:'#7B2FFF,#FF2FB3',Forecasting:'#2438FF,#7B2FFF',Growth:'#00B37E,#00B4FF',Trading:'#FF8A00,#FF2F6D'}[b.category] || '#5A6B8C,#2438FF');
-export const tile = b => `style="background:linear-gradient(135deg,${gradient(b)})"`;
-const iconPaths={users:'<circle cx="9" cy="8" r="3"/><path d="M3 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1M15 5a3 3 0 0 1 0 6M17 15h1a3 3 0 0 1 3 3v1"/>',markdown:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M6 16V8l3 4 3-4v8M16 9v6m0 0-2-2m2 2 2-2"/>',crosshair:'<circle cx="12" cy="12" r="6"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>',gamepad:'<path d="M6 8h12a4 4 0 0 1 4 4v2l-2 4h-3l-2-3H9l-2 3H4l-2-4v-2a4 4 0 0 1 4-4Z"/><path d="M7 11v4m-2-2h4m8-1h.01m3 2h.01"/>',sparkles:'<path d="m12 3 2 6 6 2-6 2-2 6-2-6-6-2 6-2 2-6Zm7 12 1 3 2 1-2 1-1 3-1-3-2-1 2-1 1-3Z"/>',trend:'<path d="M3 17 9 11l4 4 8-8M15 7h6v6"/>',layout:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 9v11"/>',code:'<path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"/>',coins:'<circle cx="9" cy="9" r="5"/><path d="M14 13a5 5 0 1 0 1-8M14 18a5 5 0 0 0 5-5"/>',megaphone:'<path d="m4 14 11-5v6L4 11v3a3 3 0 0 0 3 3h1l2 4M15 9l4-3v12l-4-3"/>',star:'<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>'};
-const iconRules=[[/human|people|referral|signup|sign-up|community/i,'users'],[/markdown|render/i,'markdown'],[/fps|shooter|three\.js|tactical/i,'crosshair'],[/game|play/i,'gamepad'],[/ai|judge|image|excited|art|picture|photo/i,'sparkles'],[/forecast|predict|market|price/i,'trend'],[/frontend|ui|interface|design|website/i,'layout'],[/code|dev|tool|api|bug/i,'code'],[/trad|coin|token|swap/i,'coins'],[/growth|viral|launch/i,'megaphone']];
-export function bountyIcon(b){const key=iconRules.find(([r])=>r.test(b.title??''))?.[1]||({Forecasting:'trend',Games:'gamepad',Code:'code',Growth:'megaphone',Trading:'coins'}[b.category]||'star');return `<svg class="bounty-icon" viewBox="0 0 24 24" aria-hidden="true">${iconPaths[key]}</svg>`;}
-export function avatar(path,handle='?') { let url=''; try { if(path) url=new URL(path,'https://make.fun').href; } catch {} return `<span class="avatar-wrap"><span class="avatar-fallback">${esc(handle[0]?.toUpperCase())}</span>${url?`<img class="avatar" src="${esc(url)}" crossorigin="anonymous" alt="" onerror="this.style.visibility='hidden'">`:''}</span>`; }
-export const rate = e => e.values?.judge == null ? '—' : `${(Number(e.values.judge)/10000).toLocaleString('en-US',{maximumFractionDigits:2})}%`;
+export const plain=x=>String(x??'').replace(/```[^\n]*\n?([\s\S]*?)```/g,'$1').replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|[-*+]\s+|\d+[.)]\s+)/gm,'').replace(/[*_`~]/g,'').trim();
+export const paragraphs=x=>plain(x).split(/\n\s*\n/).filter(Boolean).map(p=>`<p>${esc(p.replace(/\n/g,' '))}</p>`).join('');
