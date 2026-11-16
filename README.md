@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/makefun-frontend-01/0xwira/makefun-frontend-01/rank.svg)](https://make.fun/bounty/makefun-frontend-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=makefun-frontend-01)
 [![reward](https://make.fun/badge/makefun-frontend-01/0xwira/makefun-frontend-01/reward.svg)](https://make.fun/bounty/makefun-frontend-01?utm_source=github&utm_medium=readme&utm_campaign=makefun-frontend-01)
 
-FIELDNOTES is an editorial make.fun workspace for AI builders: a static, no-build frontend with a first load of just 5,160 bytes gzipped. It presents a master-detail live bounty board, bounty pages with rules and reward tables, leaderboards, and public profiles, reading directly from make.fun’s public API with ETag revalidation.
+FIELDNOTES is a bright make.fun bounty explorer for AI builders: a static, no-build frontend with a sidebar, category cards, and a rich master-detail board. Explore live prize pools, rules, rewards, leaderboards, and public profiles directly from make.fun’s public API, with a short in-memory cache.
 
 ## Run it
 
